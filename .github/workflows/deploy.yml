@@ -1,9 +1,9 @@
 name: Deploy to GitHub Pages
 
-# При каждом пуше в main сайт автоматически пересобирается и публикуется
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -19,24 +19,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Забрать код
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Установить Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Установить зависимости
-        run: npm install
+      - run: npm install
 
-      - name: Собрать статическую версию
-        run: npm run build
-        env:
-          DEPLOY_FOR_PAGES: "1"
+      - run: npm run build
 
-      - name: Упаковать результат
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: ./out
 
@@ -47,6 +40,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Опубликовать на GitHub Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
