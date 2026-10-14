@@ -5,7 +5,7 @@ import { CircleCheck, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { addQuiz } from "@/lib/progress-store";
+import { saveAttempt } from "@/lib/progress-store";
 import type { PracticeQuestion } from "@/lib/course";
 
 function shuffle(n: number): number[] {
@@ -44,13 +44,14 @@ export function Quiz({
   const passed = score >= passScore;
 
   function finish() {
-    addQuiz({ lessonId, correct: correctCount, total: questions.length, score, at: new Date().toISOString() });
+    // Результат считается и сохраняется прямо в браузере (localStorage)
+    const attempt = saveAttempt(lessonId, correctCount, questions.length);
     setFinished(true);
     toast({
-      title: isCheck ? "Мини-проверка сохранена" : "Результат практики сохранён",
-      description: `${score}% · ${passed ? "зачтено" : `порог ${passScore}% не достигнут — можно пройти ещё раз`}`,
+      title: isCheck ? "Мини-проверка завершена" : "Результат практики сохранён",
+      description: `${attempt.score}% · ${attempt.score >= passScore ? "зачтено" : `порог ${passScore}% не достигнут — можно пройти ещё раз`}`,
     });
-    if (passed) onPassed?.(score);
+    if (attempt.score >= passScore) onPassed?.(attempt.score);
   }
 
   function retake() {

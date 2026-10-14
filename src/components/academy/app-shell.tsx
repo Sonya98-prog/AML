@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpenText, GraduationCap, House, Menu, ShieldCheck } from "lucide-react";
+import { BookOpenText, GraduationCap, House, Menu, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -35,11 +35,10 @@ function Logo({ compact = false }: { compact?: boolean }) {
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const items = [...NAV];
 
   return (
     <nav className="flex flex-col gap-1" aria-label="Основная навигация">
-      {items.map(({ href, label, icon: Icon }) => {
+      {NAV.map(({ href, label, icon: Icon }) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
           <Link
@@ -63,18 +62,13 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function LocalCard() {
+function StorageNote() {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-      <div className="flex items-center gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white">
-          <ShieldCheck className="size-4.5" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-[13px] font-semibold text-white">Личный прогресс</p>
-          <p className="truncate text-[11px] text-slate-400">хранится в этом браузере</p>
-        </div>
-      </div>
+    <div className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/5 p-3">
+      <Save className="mt-0.5 size-4 shrink-0 text-slate-400" aria-hidden />
+      <p className="text-[11.5px] leading-relaxed text-slate-400">
+        Без входа в аккаунт: зачёты и результаты тестов сохраняются в этом браузере на этом устройстве.
+      </p>
     </div>
   );
 }
@@ -92,7 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <NavLinks />
         </div>
-        <LocalCard />
+        <StorageNote />
       </aside>
 
       {/* Мобильная шапка */}
@@ -113,7 +107,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
                 <NavLinks onNavigate={() => setOpen(false)} />
               </div>
-              <LocalCard />
+              <StorageNote />
             </div>
           </SheetContent>
         </Sheet>

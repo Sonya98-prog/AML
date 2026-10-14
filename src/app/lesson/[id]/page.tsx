@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/academy/app-shell";
 import { LessonView } from "@/components/academy/lesson-view";
-import { getLesson, getBlockOf, neighborLessons, blockNumber, passScoreFor, ALL_LESSONS } from "@/lib/course";
+import { ALL_LESSONS, getLesson, getBlockOf, neighborLessons, blockNumber, passScoreFor } from "@/lib/course";
 
-export const dynamicParams = false;
-
+// Статический экспорт: заранее собираем страницу для каждого занятия
 export function generateStaticParams() {
   return ALL_LESSONS.map((l) => ({ id: l.id }));
 }

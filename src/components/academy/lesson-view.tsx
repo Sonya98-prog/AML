@@ -11,6 +11,7 @@ import {
   ClipboardCheck,
   Info,
   Lightbulb,
+  Loader2,
   ListChecks,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -19,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Quiz } from "@/components/academy/quiz";
-import { bestScoreFor, isPassed, togglePassed } from "@/lib/progress-store";
+import { isLessonCompleted, setLessonCompleted, getBestScore } from "@/lib/progress-store";
 import type { ConceptItem, Lesson } from "@/lib/course";
 
 function ConceptItemView({ item }: { item: ConceptItem }) {
@@ -117,10 +118,12 @@ export function LessonView({
 }) {
   const [completed, setCompleted] = useState(false);
   const [quizPassedScore, setQuizPassedScore] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
 
+  // Прогресс читаем в браузере (localStorage)
   useEffect(() => {
-    setCompleted(isPassed(lesson.id));
-    setQuizPassedScore(bestScoreFor(lesson.id));
+    setCompleted(isLessonCompleted(lesson.id));
+    setQuizPassedScore(getBestScore(lesson.id));
   }, [lesson.id]);
 
   const passed = (quizPassedScore ?? -1) >= passScore;
@@ -128,12 +131,17 @@ export function LessonView({
   function toggleComplete() {
     const target = !completed;
     if (lesson.isCheck && target && !passed) return;
-    togglePassed(lesson.id, target);
-    setCompleted(target);
-    toast({
-      title: target ? "Занятие зачтено" : "Отметка снята",
-      description: target ? "Прогресс обновлён на дашборде." : undefined,
-    });
+    setBusy(true);
+    try {
+      setLessonCompleted(lesson.id, target);
+      setCompleted(target);
+      toast({
+        title: target ? "Занятие зачтено" : "Отметка снята",
+        description: target ? "Прогресс сохранён в этом браузере." : undefined,
+      });
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -249,10 +257,11 @@ export function LessonView({
         <div className="flex flex-wrap items-center gap-3">
           <Button
             onClick={toggleComplete}
-            disabled={lesson.isCheck && !completed && !passed}
+            disabled={busy || (lesson.isCheck && !completed && !passed)}
             variant={completed ? "outline" : "default"}
             className={cn(!completed && "bg-gradient-to-r from-blue-600 to-blue-500 shadow-md shadow-blue-600/25")}
           >
+            {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}
             {completed ? (
               <>
                 <CircleCheckBig className="size-4 text-emerald-500" aria-hidden />

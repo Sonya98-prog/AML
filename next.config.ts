@@ -1,21 +1,15 @@
 import type { NextConfig } from "next";
 
-// STATIC_EXPORT=1 — сборка статического сайта для GitHub Pages:
-//  output: 'export' → папка out/, basePath '/AML' → работа по адресу
-//  https://<логин>.github.io/AML/
-// Без переменной — обычный серверный режим для локальной разработки.
-const isStatic = process.env.STATIC_EXPORT === "1";
+// Для публикации на GitHub Pages (репозиторий AML → сайт /AML/).
+// Локально переменная не задана — сайт работает на http://localhost:3000
+const basePath = process.env.DEPLOY_FOR_PAGES ? "/AML" : "";
 
 const nextConfig: NextConfig = {
-  ...(isStatic
-    ? {
-        output: "export",
-        trailingSlash: true,
-        basePath: "/AML",
-        assetPrefix: "/AML",
-        images: { unoptimized: true },
-      }
-    : {}),
+  // Статический экспорт: на выходе папка out/ с готовыми HTML-файлами.
+  output: "export",
+  trailingSlash: true,
+  ...(basePath ? { basePath } : {}),
+  images: { unoptimized: true },
   typescript: {
     ignoreBuildErrors: true,
   },
