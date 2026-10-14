@@ -82,12 +82,16 @@ export default async function AboutPage() {
           <Card className="py-0 shadow-sm">
             <CardContent className="px-5 py-4">
               <ul className="divide-y divide-border/70">
-                {DOCS.map((d, i) => (
-                  <li key={i} className="py-2.5 first:pt-0 last:pb-0">
-                    <p className="text-[13.5px] font-semibold">{d.t}</p>
-                    {"d" in d && d.d && <p className="text-[12px] text-muted-foreground">{d.d}</p>}
-                  </li>
-                ))}
+                                {DOCS.map((d, i) => {
+                  const title = typeof d === "string" ? d : d.t;
+                  const desc = typeof d === "string" ? null : d.d;
+                  return (
+                    <li key={i} className="py-2.5 first:pt-0 last:pb-0">
+                      <p className="text-[13.5px] font-semibold">{title}</p>
+                      {desc && <p className="text-[12px] text-muted-foreground">{desc}</p>}
+                    </li>
+                  );
+                })}
               </ul>
               <p className="mt-3 rounded-lg bg-secondary/70 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-secondary-foreground">
                 Материалы доступны у команды разработки. Если какого-то документа у вас нет — запросите у коллег,
