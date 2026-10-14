@@ -1,14 +1,15 @@
 import type { NextConfig } from "next";
 
-// Для публикации на GitHub Pages (репозиторий AML → сайт /AML/).
-// Локально переменная не задана — сайт работает на http://localhost:3000
-const basePath = process.env.DEPLOY_FOR_PAGES ? "/AML" : "";
+// GitHub Pages serves project sites under /<repo-name>/, so production
+// builds must be prefixed with /AML. `next build` always sets
+// NODE_ENV=production, while `next dev` uses development - so local dev
+// keeps working at http://localhost:3000 without the prefix.
+const isBuild = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
-  // Статический экспорт: на выходе папка out/ с готовыми HTML-файлами.
   output: "export",
   trailingSlash: true,
-  ...(basePath ? { basePath } : {}),
+  ...(isBuild ? { basePath: "/AML" } : {}),
   images: { unoptimized: true },
   typescript: {
     ignoreBuildErrors: true,
