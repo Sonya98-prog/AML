@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CircleCheck, Loader2, RotateCcw } from "lucide-react";
+import { CircleCheck, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { addQuiz } from "@/lib/progress-store";
 import type { PracticeQuestion } from "@/lib/course";
 
 function shuffle(n: number): number[] {
@@ -33,7 +34,6 @@ export function Quiz({
   const [answers, setAnswers] = useState<(number | null)[]>(() => questions.map(() => null));
   const [checked, setChecked] = useState<boolean[]>(() => questions.map(() => false));
   const [finished, setFinished] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   const allChecked = checked.every(Boolean);
   const correctCount = useMemo(
@@ -43,28 +43,14 @@ export function Quiz({
   const score = Math.round((correctCount / questions.length) * 100);
   const passed = score >= passScore;
 
-  async function finish() {
+  function finish() {
+    addQuiz({ lessonId, correct: correctCount, total: questions.length, score, at: new Date().toISOString() });
     setFinished(true);
-    setSaving(true);
-    try {
-      const res = await fetch("/api/quiz", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lessonId, correct: correctCount, total: questions.length }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast({
-          title: isCheck ? "Мини-проверка сохранена" : "Результат практики сохранён",
-          description: `${data.score}% · ${data.passed ? "зачтено" : `порог ${passScore}% не достигнут — можно пройти ещё раз`}`,
-        });
-        if (data.passed) onPassed?.(data.score);
-      }
-    } catch {
-      toast({ title: "Не удалось сохранить результат", variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
+    toast({
+      title: isCheck ? "Мини-проверка сохранена" : "Результат практики сохранён",
+      description: `${score}% · ${passed ? "зачтено" : `порог ${passScore}% не достигнут — можно пройти ещё раз`}`,
+    });
+    if (passed) onPassed?.(score);
   }
 
   function retake() {
@@ -179,8 +165,7 @@ export function Quiz({
               {passed ? "Порог пройден — результат будет сохранён." : `Для зачёта нужен порог ${passScore}%.`}
             </p>
           </div>
-          <Button onClick={finish} disabled={saving}>
-            {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
+          <Button onClick={finish}>
             Сохранить результат
           </Button>
         </div>

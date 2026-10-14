@@ -1,20 +1,21 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CircleCheckBig, CircleDashed, ArrowRight, Trophy, Sparkles, Flame } from "lucide-react";
-import { db } from "@/lib/db";
-import { getSessionUser } from "@/lib/auth";
-import { AuthScreen } from "@/components/academy/auth-screen";
 import { AppShell } from "@/components/academy/app-shell";
 import { ProgressRing } from "@/components/academy/progress-ring";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { loadState, setName } from "@/lib/progress-store";
 import {
   COURSE,
   GLOSSARY,
   RELEASED_LESSONS,
   TOTAL_LESSONS,
-  TOTAL_QUESTIONS,
   nextLessonId,
 } from "@/lib/course";
 
@@ -22,36 +23,68 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 }
 
-export default async function Home() {
-  const user = await getSessionUser();
+const LAST_RESULTS = 5;
 
-  if (!user) {
-    return (
-      <AuthScreen
-        stats={{ blocks: COURSE.length, lessons: TOTAL_LESSONS, questions: TOTAL_QUESTIONS, terms: GLOSSARY.length }}
-      />
+export default function Home() {
+  const [hydrated, setHydrated] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [nameDraft, setNameDraft] = useState("");
+  const [passedIds, setPassedIds] = useState<string[]>([]);
+  const [quizzes, setQuizzes] = useState<{ lessonId: string; correct: number; total: number; score: number; at: string; key: string }[]>([]);
+
+  useEffect(() => {
+    const s = loadState();
+    setUserName(s.name);
+    setNameDraft(s.name);
+    setPassedIds(s.passed);
+    setQuizzes(
+      [...s.quizzes]
+        .sort((a, b) => (a.at < b.at ? 1 : -1))
+        .slice(0, LAST_RESULTS)
+        .map((q, i) => ({ ...q, key: `${q.lessonId}-${q.at}-${i}` }))
     );
-  }
+    setHydrated(true);
+  }, []);
 
-  const [progress, attempts] = await Promise.all([
-    db.lessonProgress.findMany({ where: { userId: user.id } }),
-    db.quizAttempt.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 5 }),
-  ]);
-
-  const completedIds = new Set(progress.map((p) => p.lessonId));
+  const completedIds = useMemo(() => new Set(passedIds), [passedIds]);
   const completed = RELEASED_LESSONS.filter((l) => completedIds.has(l.id)).length;
   const percent = Math.round((completed / TOTAL_LESSONS) * 100);
   const nextId = nextLessonId(completedIds);
   const avgScore =
-    attempts.length > 0 ? Math.round(attempts.reduce((s, a) => s + a.score, 0) / attempts.length) : null;
+    quizzes.length > 0 ? Math.round(quizzes.reduce((s, a) => s + a.score, 0) / quizzes.length) : null;
+
+  function saveName() {
+    setName(nameDraft);
+    setUserName(nameDraft.trim().slice(0, 60));
+  }
 
   return (
-    <AppShell user={{ name: user.name, email: user.email, role: user.role }}>
+    <AppShell>
       <div className="space-y-6">
         {/* Hero */}
         <section className="hero-gradient fade-up relative overflow-hidden rounded-2xl p-6 text-white sm:p-8">
-          <p className="text-[13px] font-medium text-slate-400">Личный кабинет · {user.name}</p>
-          <h1 className="mt-1 max-w-xl font-head text-2xl font-extrabold tracking-tight sm:text-3xl">
+          <p className="text-[13px] font-medium text-slate-400">Личный кабинет · {userName || "коллега"}</p>
+
+          {hydrated && !userName && (
+            <div className="mt-2 flex max-w-md flex-col gap-2 sm:flex-row">
+              <Input
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && saveName()}
+                placeholder="Как вас зовут?"
+                aria-label="Ваше имя"
+                className="h-10 border-white/20 bg-white/10 text-white placeholder:text-slate-400 focus-visible:ring-white/40"
+              />
+              <Button
+                onClick={saveName}
+                className="h-10 shrink-0 bg-white/15 text-white hover:bg-white/25"
+              >
+                Сохранить
+              </Button>
+            </div>
+          )}
+
+          <h1 className="mt-2 max-w-xl font-head text-2xl font-extrabold tracking-tight sm:text-3xl">
             {completed === 0
               ? "Начните путь в домен ПОД/ФТ"
               : completed === TOTAL_LESSONS
@@ -170,7 +203,7 @@ export default async function Home() {
             <Flame className="size-4.5 text-orange-500" aria-hidden />
             Последние результаты тестов
           </h2>
-          {attempts.length === 0 ? (
+          {quizzes.length === 0 ? (
             <Card className="border-dashed border-border/80 shadow-none">
               <CardContent className="px-5 py-6 text-sm text-muted-foreground">
                 Пока нет попыток. Пройдите практику в любом занятии — результат появится здесь.
@@ -178,10 +211,10 @@ export default async function Home() {
             </Card>
           ) : (
             <ul className="grid gap-2.5 sm:grid-cols-2">
-              {attempts.map((a) => {
+              {quizzes.map((a) => {
                 const passed = a.score >= 70;
                 return (
-                  <li key={a.id} className="flex items-center gap-3 rounded-xl border border-border/70 bg-card px-4 py-3 shadow-sm">
+                  <li key={a.key} className="flex items-center gap-3 rounded-xl border border-border/70 bg-card px-4 py-3 shadow-sm">
                     <span
                       className={cn(
                         "grid size-10 shrink-0 place-items-center rounded-full font-head text-[13px] font-extrabold",
@@ -192,10 +225,10 @@ export default async function Home() {
                     </span>
                     <div className="min-w-0 flex-1 leading-tight">
                       <Link href={`/lesson/${a.lessonId}`} className="block truncate text-[13px] font-semibold hover:text-primary">
-                        {a.lessonId}. {[...COURSE].flatMap((b) => b.lessons).find((l) => l.id === a.lessonId)?.title ?? a.lessonId}
+                        {a.lessonId}. {COURSE.flatMap((b) => b.lessons).find((l) => l.id === a.lessonId)?.title ?? a.lessonId}
                       </Link>
                       <p className="text-[11px] text-muted-foreground">
-                        {a.correct} из {a.total} · {formatDate(a.createdAt.toISOString())}
+                        {a.correct} из {a.total} · {formatDate(a.at)}
                       </p>
                     </div>
                   </li>

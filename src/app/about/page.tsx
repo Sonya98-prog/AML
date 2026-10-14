@@ -1,6 +1,4 @@
-import { redirect } from "next/navigation";
 import { BookMarked, GraduationCap, MessagesSquare, ShieldCheck, Target } from "lucide-react";
-import { getSessionUser } from "@/lib/auth";
 import { AppShell } from "@/components/academy/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DOCS, GLOSSARY, TOTAL_LESSONS, TOTAL_QUESTIONS } from "@/lib/course";
@@ -23,12 +21,9 @@ const RULES = [
   },
 ];
 
-export default async function AboutPage() {
-  const user = await getSessionUser();
-  if (!user) redirect("/");
-
+export default function AboutPage() {
   return (
-    <AppShell user={{ name: user.name, email: user.email, role: user.role }}>
+    <AppShell>
       <div className="space-y-5">
         <header className="fade-up">
           <h1 className="font-head text-2xl font-extrabold tracking-tight">О курсе</h1>
@@ -82,7 +77,7 @@ export default async function AboutPage() {
           <Card className="py-0 shadow-sm">
             <CardContent className="px-5 py-4">
               <ul className="divide-y divide-border/70">
-                                {DOCS.map((d, i) => {
+                {DOCS.map((d, i) => {
                   const title = typeof d === "string" ? d : d.t;
                   const desc = typeof d === "string" ? null : d.d;
                   return (

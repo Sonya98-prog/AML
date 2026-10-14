@@ -24,7 +24,7 @@ export type Lesson = {
 export type Block = { id: string; title: string; subtitle?: string; released: boolean; lessons: Lesson[] };
 
 export type GlossaryTerm = { t: string; d: string; s?: string };
-export type DocItem = { t: string; d?: string };
+export type DocItem = string | { t: string; d?: string };
 
 export const COURSE = data.course as unknown as Block[];
 export const GLOSSARY = data.glossary as unknown as GlossaryTerm[];

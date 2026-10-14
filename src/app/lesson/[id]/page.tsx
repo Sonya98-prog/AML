@@ -1,14 +1,15 @@
-import { notFound, redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { getSessionUser } from "@/lib/auth";
+import { notFound } from "next/navigation";
 import { AppShell } from "@/components/academy/app-shell";
 import { LessonView } from "@/components/academy/lesson-view";
-import { getLesson, getBlockOf, neighborLessons, blockNumber, passScoreFor } from "@/lib/course";
+import { getLesson, getBlockOf, neighborLessons, blockNumber, passScoreFor, ALL_LESSONS } from "@/lib/course";
+
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return ALL_LESSONS.map((l) => ({ id: l.id }));
+}
 
 export default async function LessonPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await getSessionUser();
-  if (!user) redirect("/");
-
   const { id } = await params;
   const lesson = getLesson(id);
   if (!lesson) notFound();
@@ -17,27 +18,14 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const blockIdx = blockNumber(id);
   const { prev, next } = neighborLessons(id);
 
-  const [progress, attempts] = await Promise.all([
-    db.lessonProgress.findUnique({
-      where: { userId_lessonId: { userId: user.id, lessonId: id } },
-    }),
-    db.quizAttempt.findMany({
-      where: { userId: user.id, lessonId: id },
-      orderBy: { score: "desc" },
-      take: 1,
-    }),
-  ]);
-
   return (
-    <AppShell user={{ name: user.name, email: user.email, role: user.role }}>
+    <AppShell>
       <LessonView
         lesson={lesson}
         blockIdx={blockIdx}
         blockTitle={block?.title ?? ""}
         prev={prev ? { id: prev.id, title: prev.title } : null}
         next={next ? { id: next.id, title: next.title } : null}
-        initialCompleted={!!progress}
-        bestScore={attempts[0]?.score ?? null}
         passScore={passScoreFor(lesson)}
       />
     </AppShell>

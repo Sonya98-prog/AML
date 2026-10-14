@@ -3,12 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpenText, GraduationCap, House, LogOut, Menu, Users } from "lucide-react";
+import { BookOpenText, GraduationCap, House, Menu, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-
-export type ShellUser = { name: string; email: string; role: string };
 
 const NAV = [
   { href: "/", label: "Главная", icon: House },
@@ -35,10 +33,9 @@ function Logo({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function NavLinks({ user, onNavigate }: { user: ShellUser; onNavigate?: () => void }) {
+function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const items = [...NAV];
-  if (user.role === "mentor") items.splice(1, 0, { href: "/team", label: "Команда", icon: Users } as const);
 
   return (
     <nav className="flex flex-col gap-1" aria-label="Основная навигация">
@@ -66,54 +63,23 @@ function NavLinks({ user, onNavigate }: { user: ShellUser; onNavigate?: () => vo
   );
 }
 
-function UserCard({ user }: { user: ShellUser }) {
-  const [busy, setBusy] = useState(false);
-
-  async function logout() {
-    setBusy(true);
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      window.location.href = "/";
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const initials = user.name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase())
-    .join("");
-
+function LocalCard() {
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-3">
       <div className="flex items-center gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-xs font-bold text-white">
-          {initials}
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white">
+          <ShieldCheck className="size-4.5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-[13px] font-semibold text-white">{user.name}</p>
-          <p className="truncate text-[11px] text-slate-400">
-            {user.role === "mentor" ? "Ментор курса" : "Участник курса"}
-          </p>
+          <p className="truncate text-[13px] font-semibold text-white">Личный прогресс</p>
+          <p className="truncate text-[11px] text-slate-400">хранится в этом браузере</p>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={logout}
-          disabled={busy}
-          className="size-8 shrink-0 text-slate-400 hover:bg-white/10 hover:text-white"
-          aria-label="Выйти"
-          title="Выйти"
-        >
-          <LogOut className="size-4" />
-        </Button>
       </div>
     </div>
   );
 }
 
-export function AppShell({ user, children }: { user: ShellUser; children: React.ReactNode }) {
+export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -124,9 +90,9 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
           <div className="px-1.5 pb-6 pt-1">
             <Logo />
           </div>
-          <NavLinks user={user} />
+          <NavLinks />
         </div>
-        <UserCard user={user} />
+        <LocalCard />
       </aside>
 
       {/* Мобильная шапка */}
@@ -145,9 +111,9 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
                 <div className="px-1.5 pb-6 pt-1">
                   <Logo />
                 </div>
-                <NavLinks user={user} onNavigate={() => setOpen(false)} />
+                <NavLinks onNavigate={() => setOpen(false)} />
               </div>
-              <UserCard user={user} />
+              <LocalCard />
             </div>
           </SheetContent>
         </Sheet>

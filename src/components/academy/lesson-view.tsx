@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,7 +11,6 @@ import {
   ClipboardCheck,
   Info,
   Lightbulb,
-  Loader2,
   ListChecks,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -21,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Quiz } from "@/components/academy/quiz";
+import { bestScoreFor, isPassed, togglePassed } from "@/lib/progress-store";
 import type { ConceptItem, Lesson } from "@/lib/course";
 
 function ConceptItemView({ item }: { item: ConceptItem }) {
@@ -107,8 +106,6 @@ export function LessonView({
   blockTitle,
   prev,
   next,
-  initialCompleted,
-  bestScore,
   passScore,
 }: {
   lesson: Lesson;
@@ -116,40 +113,27 @@ export function LessonView({
   blockTitle: string;
   prev: { id: string; title: string } | null;
   next: { id: string; title: string } | null;
-  initialCompleted: boolean;
-  bestScore: number | null;
   passScore: number;
 }) {
-  const router = useRouter();
-  const [completed, setCompleted] = useState(initialCompleted);
-  const [quizPassedScore, setQuizPassedScore] = useState<number | null>(bestScore);
-  const [busy, setBusy] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [quizPassedScore, setQuizPassedScore] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCompleted(isPassed(lesson.id));
+    setQuizPassedScore(bestScoreFor(lesson.id));
+  }, [lesson.id]);
 
   const passed = (quizPassedScore ?? -1) >= passScore;
 
-  async function toggleComplete() {
+  function toggleComplete() {
     const target = !completed;
     if (lesson.isCheck && target && !passed) return;
-    setBusy(true);
-    try {
-      const res = await fetch("/api/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lessonId: lesson.id, done: target }),
-      });
-      if (res.ok) {
-        setCompleted(target);
-        toast({
-          title: target ? "Занятие зачтено" : "Отметка снята",
-          description: target ? "Прогресс обновлён на дашборде." : undefined,
-        });
-        router.refresh();
-      } else {
-        toast({ title: "Не удалось сохранить", variant: "destructive" });
-      }
-    } finally {
-      setBusy(false);
-    }
+    togglePassed(lesson.id, target);
+    setCompleted(target);
+    toast({
+      title: target ? "Занятие зачтено" : "Отметка снята",
+      description: target ? "Прогресс обновлён на дашборде." : undefined,
+    });
   }
 
   return (
@@ -265,11 +249,10 @@ export function LessonView({
         <div className="flex flex-wrap items-center gap-3">
           <Button
             onClick={toggleComplete}
-            disabled={busy || (lesson.isCheck && !completed && !passed)}
+            disabled={lesson.isCheck && !completed && !passed}
             variant={completed ? "outline" : "default"}
             className={cn(!completed && "bg-gradient-to-r from-blue-600 to-blue-500 shadow-md shadow-blue-600/25")}
           >
-            {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}
             {completed ? (
               <>
                 <CircleCheckBig className="size-4 text-emerald-500" aria-hidden />
